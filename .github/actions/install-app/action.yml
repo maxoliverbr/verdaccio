@@ -24,7 +24,9 @@ runs:
   steps:
     - name: Install pnpm
       run: |
-        npm install --global corepack@latest
+        # Windows runners can already contain a yarn shim at npm's global
+        # prefix. Corepack needs to replace that shim during installation.
+        npm install --global corepack@latest --force
         corepack enable
         corepack prepare
       shell: bash
