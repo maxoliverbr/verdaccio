@@ -78,9 +78,7 @@ const VersionsHistoryList: React.FC<Props> = ({ versions, packageName, time }) =
                   ? utils.formatDateDistance(time[version])
                   : t('versions.not-available')
               }
-              slotProps={{
-                primary: { title: time[version] ? utils.formatDate(time[version]) : undefined },
-              }}
+              slotProps={{ primary: { title: utils.formatDate(time[version]) } }}
             />
           </ListItem>
         ))}

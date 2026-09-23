@@ -1,6 +1,6 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Typography } from '@mui/material';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -9,16 +9,12 @@ import { useDataMutation } from '../../api/use-data-mutation';
 import LoginDialogFormError from '../../components/LoginDialog/LoginDialogFormError';
 import { getConfiguration } from '../../configuration';
 import SecurityLayout from '../../layouts/Security/Dialog';
-import { authErrorMessage } from '../../providers/AuthProvider/utils';
+import { normalizeAuthError } from '../../providers/AuthProvider/utils';
 import { stripTrailingSlash } from '../../store/utils';
 import { Route } from '../../utils';
 import { APIRoute } from '../../utils/routes';
 import type { ChangePasswordFormValues } from '../../utils/schemas';
-import {
-  PASSWORD_MIN_LENGTH,
-  USERNAME_MIN_LENGTH,
-  changePasswordSchema,
-} from '../../utils/schemas';
+import { changePasswordSchema } from '../../utils/schemas';
 import { MessageType } from './Success';
 import { SecurityContainer, SecurityForm, SecurityTextField } from './styles';
 
@@ -44,28 +40,24 @@ const ChangePassword: React.FC = () => {
     setError,
     handleSubmit,
     register,
-    formState: { isValid, isSubmitting, errors },
+    formState: { isValid, errors },
   } = form;
 
   const { trigger } = useDataMutation<{ ok: string }>(basePath, APIRoute.RESET_PASSWORD, 'PUT');
 
   const handleChangePassword = useCallback(
     async (body: { password: { old: string; new: string } }) => {
-      await trigger(body);
+      try {
+        await trigger(body);
+      } catch (err) {
+        throw normalizeAuthError(err);
+      }
     },
     [trigger]
   );
 
-  // `disabled={isSubmitting}` only applies after a re-render; clicks landing in
-  // the same React batch would still fire duplicate requests
-  const inFlight = useRef(false);
-
   const onSubmit = useCallback(
     async (data: ChangePasswordFormValues) => {
-      if (inFlight.current) {
-        return;
-      }
-      inFlight.current = true;
       try {
         await handleChangePassword({
           password: {
@@ -74,16 +66,14 @@ const ChangePassword: React.FC = () => {
           },
         });
         navigate(`${Route.SUCCESS}?messageType=${MessageType.ChangePassword}`);
-      } catch (err) {
+      } catch {
         setError('root', {
           type: 'server',
-          message: authErrorMessage(err, t('security.error.unable-to-change-password')),
+          message: 'Failed to change password',
         });
-      } finally {
-        inFlight.current = false;
       }
     },
-    [handleChangePassword, setError, navigate, t]
+    [handleChangePassword, setError, navigate]
   );
 
   useEffect(() => {
@@ -101,22 +91,14 @@ const ChangePassword: React.FC = () => {
           </Typography>
           <SecurityTextField
             error={!!errors.username}
-            helperText={
-              errors.username?.message
-                ? t(errors.username.message, { length: USERNAME_MIN_LENGTH })
-                : undefined
-            }
+            helperText={errors.username?.message}
             label={t('security.changePassword.username')}
             {...register('username')}
             required={true}
           />
           <SecurityTextField
             error={!!errors.oldPassword}
-            helperText={
-              errors.oldPassword?.message
-                ? t(errors.oldPassword.message, { length: PASSWORD_MIN_LENGTH })
-                : undefined
-            }
+            helperText={errors.oldPassword?.message}
             label={t('security.changePassword.oldPassword')}
             {...register('oldPassword')}
             required={true}
@@ -124,11 +106,7 @@ const ChangePassword: React.FC = () => {
           />
           <SecurityTextField
             error={!!errors.newPassword}
-            helperText={
-              errors.newPassword?.message
-                ? t(errors.newPassword.message, { length: PASSWORD_MIN_LENGTH })
-                : undefined
-            }
+            helperText={errors.newPassword?.message}
             label={t('security.changePassword.newPassword')}
             {...register('newPassword')}
             required={true}
@@ -136,9 +114,7 @@ const ChangePassword: React.FC = () => {
           />
           <SecurityTextField
             error={!!errors.confirmPassword}
-            helperText={
-              errors.confirmPassword?.message ? t(errors.confirmPassword.message) : undefined
-            }
+            helperText={errors.confirmPassword?.message}
             label={t('security.changePassword.confirmPassword')}
             {...register('confirmPassword')}
             required={true}
@@ -147,7 +123,7 @@ const ChangePassword: React.FC = () => {
           {errors.root && <LoginDialogFormError error={errors.root} />}
           <Button
             color="primary"
-            disabled={!isValid || isSubmitting}
+            disabled={!isValid}
             fullWidth={true}
             sx={{ mt: 2 }}
             type="submit"

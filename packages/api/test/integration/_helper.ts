@@ -1,13 +1,10 @@
 import type { Application } from 'express';
-import express from 'express';
-import { isEmpty } from 'lodash-es';
-import os from 'node:os';
+import { isEmpty, isNil } from 'lodash-es';
 import path from 'node:path';
 import supertest from 'supertest';
 import { expect } from 'vitest';
 
-import { Auth } from '@verdaccio/auth';
-import { Config, parseConfigFile } from '@verdaccio/config';
+import { parseConfigFile } from '@verdaccio/config';
 import {
   HEADERS,
   HEADER_TYPE,
@@ -15,10 +12,7 @@ import {
   TOKEN_BEARER,
   authUtils,
   cryptoUtils,
-  errorUtils,
 } from '@verdaccio/core';
-import { setup } from '@verdaccio/logger';
-import { errorReportingMiddleware, final, handleError } from '@verdaccio/middleware';
 import { Storage } from '@verdaccio/store';
 import {
   generatePackageMetadata,
@@ -41,36 +35,6 @@ export const getConf = (conf: string) => {
 export async function initializeServer(configName: string): Promise<Application> {
   const config = getConf(configName);
   return initializeServerHelper(config, [apiMiddleware], Storage);
-}
-
-export async function initializeServerWithContext(configName: string) {
-  const configObject = getConf(configName);
-  const app = express();
-  const logger = await setup(configObject.log ?? {});
-  const config = new Config(configObject);
-  config.storage = path.join(os.tmpdir(), '/storage', cryptoUtils.generateRandomHexString());
-  config.configPath = config.storage;
-
-  const storage = new Storage(config, logger);
-  await storage.init(config, []);
-  const auth = new Auth(config, logger);
-  await auth.init();
-
-  app.use(express.json({ strict: false, limit: '10mb' }));
-  app.use(errorReportingMiddleware(logger));
-  app.use(apiMiddleware(config, auth, storage, logger));
-  app.get('/{*any}', function (req, res, next) {
-    next(errorUtils.getNotFound('resource not found'));
-  });
-  app.use(handleError(logger));
-  app.use(final);
-
-  app.use(function (request, response) {
-    response.status(590);
-    response.json({ error: 'cannot handle this' });
-  });
-
-  return { app, auth, config, logger, storage };
 }
 
 export function createUser(app: any, name: string, password: string): supertest.Test {
@@ -146,7 +110,7 @@ export function publishVersion(
     .set('accept', HEADERS.GZIP)
     .set(HEADER_TYPE.ACCEPT_ENCODING, HEADERS.JSON);
 
-  if (typeof token === 'string' && isEmpty(token) === false) {
+  if (typeof token === 'string') {
     test.set(HEADERS.AUTHORIZATION, buildToken(TOKEN_BEARER, token));
   }
 
@@ -177,7 +141,7 @@ export function changeOwners(
     .set('accept', HEADERS.GZIP)
     .set(HEADER_TYPE.ACCEPT_ENCODING, HEADERS.JSON);
 
-  if (typeof token === 'string' && isEmpty(token) === false) {
+  if (typeof token === 'string') {
     test.set(HEADERS.AUTHORIZATION, buildToken(TOKEN_BEARER, token));
   }
 
@@ -200,7 +164,7 @@ export function getPackage(
 ): supertest.Test {
   const test = supertest(app).get(`/${pkgName}`);
 
-  if (typeof token === 'string' && isEmpty(token) === false) {
+  if (isNil(token) === false || isEmpty(token) === false) {
     test.set(HEADERS.AUTHORIZATION, buildToken(TOKEN_BEARER, token));
   }
 

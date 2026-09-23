@@ -1,16 +1,12 @@
 name: Docker build test
 
 on:
-  pull_request:
-    paths:
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'docker-bin/**'
-      - 'packages/config/src/conf/docker.yaml'
-      - '.github/workflows/docker-build-test.yml'
+  # The CI workflow builds and exercises this image on every PR and merge queue run.
+  # Keep this as an explicit diagnostic while required-check settings are audited.
+  workflow_dispatch:
 
 concurrency:
-  group: docker-build-test-${{ github.ref }}
+  group: docker-build-test-manual-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -22,39 +18,20 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
 
       - name: Build image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
           push: false
           load: true
-          tags: verdaccio/verdaccio:pr-${{ github.event.pull_request.number }}
+          tags: verdaccio/verdaccio:manual
 
-      - name: Run container
-        run: |
-          docker run -d --rm --name verdaccio \
-            verdaccio/verdaccio:pr-${{ github.event.pull_request.number }}
-
-      - name: Ping registry with verdaccioctl (inside container)
-        run: |
-          for i in $(seq 1 30); do
-            if docker exec -u 0 verdaccio npx -y @verdaccio/registry-cli ping -r http://localhost:4873; then
-              echo "Verdaccio responded after ${i} attempt(s)"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "::error::Verdaccio did not respond within 30 attempts"
-          docker logs verdaccio
-          exit 1
-
-      - name: Stop container
-        if: always()
-        run: docker stop verdaccio || true
+      - name: Exercise built image
+        run: bash scripts/test-docker-image.sh verdaccio/verdaccio:manual

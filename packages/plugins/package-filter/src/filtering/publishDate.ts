@@ -2,8 +2,9 @@ import buildDebug from 'debug';
 
 import type { Manifest } from '@verdaccio/types';
 
-import { resolveAllowList } from './matcher';
-import type { MatchResult } from './types';
+import type { ParsedRule } from '../config/types';
+import { matchRules } from './matcher';
+import { MatchType } from './types';
 
 const debug = buildDebug('verdaccio:plugin:package-filter:filter');
 
@@ -13,10 +14,13 @@ const debug = buildDebug('verdaccio:plugin:package-filter:filter');
 export function filterVersionsByPublishDate(
   manifest: Manifest,
   dateThreshold: Date,
-  allowMatch: MatchResult | undefined
+  allowRules: Map<string, ParsedRule>
 ): Manifest {
-  const { allowAll, whitelistedVersions } = resolveAllowList(allowMatch);
-  if (allowAll) {
+  const allowMatch = matchRules(manifest, allowRules);
+  if (
+    allowMatch &&
+    (allowMatch.type === MatchType.SCOPE || allowMatch.type === MatchType.PACKAGE)
+  ) {
     // An entire scope or package is whitelisted
     return manifest;
   }
@@ -27,6 +31,7 @@ export function filterVersionsByPublishDate(
     throw new TypeError(`Time of publication was not provided for package ${name}`);
   }
 
+  const whitelistedVersions: string[] = allowMatch ? allowMatch.versions : [];
   const clearVersions: string[] = [];
 
   Object.keys(versions).forEach((version) => {

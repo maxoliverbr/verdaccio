@@ -47,7 +47,7 @@ const ActionBarAction: React.FC<ActionBarActionProps> = ({ type, link, action })
       return (
         <Tooltip title={t('action-bar-action.visit-home-page') as string}>
           <LinkExternal to={link} variant="button">
-            <Fab size="small">
+            <Fab color="primary" size="small">
               <HomeIcon />
             </Fab>
           </LinkExternal>

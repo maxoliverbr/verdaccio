@@ -2,9 +2,7 @@ import isEmailValidator from 'validator/lib/isEmail';
 import isURLValidator from 'validator/lib/isURL';
 
 export function isURL(url: string): boolean {
-  // npm does not validate these fields on publish: a non-string truthy value
-  // (e.g. `homepage: 123`) would make the validator throw and crash the page
-  return isURLValidator(typeof url === 'string' ? url : '', {
+  return isURLValidator(url || '', {
     protocols: ['http', 'https', 'git+https', 'git'],
     require_protocol: true,
     require_tld: false,

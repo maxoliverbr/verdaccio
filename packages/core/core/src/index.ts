@@ -6,7 +6,6 @@ import * as fileUtils from './file-utils';
 import * as ipUtils from './ip-utils';
 import * as pkgUtils from './pkg-utils';
 import * as pluginUtils from './plugin-utils';
-import * as reqUtils from './req-utils';
 import * as searchUtils from './search-utils';
 import * as streamUtils from './stream-utils';
 import * as stringUtils from './string-utils';
@@ -29,7 +28,6 @@ export {
   DEFAULT_PASSWORD_VALIDATION,
   DEFAULT_USER,
   ANONYMOUS_USER,
-  UUID_PATTERN,
   USERS,
   MAINTAINERS,
   PLUGIN_CATEGORY,
@@ -55,5 +53,4 @@ export {
   pluginUtils,
   warningUtils,
   tarballUtils,
-  reqUtils,
 };

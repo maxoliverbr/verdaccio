@@ -11,10 +11,6 @@ import { hasKeys } from './utits';
 const Dependencies: React.FC<{ packageMeta: any }> = ({ packageMeta }) => {
   const { t } = useTranslation();
 
-  if (!packageMeta?.latest) {
-    return null;
-  }
-
   const { latest } = packageMeta;
   // FIXME: add dependencies to package meta type
   // @ts-ignore

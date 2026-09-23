@@ -1,14 +1,12 @@
 import buildDebug from 'debug';
 import { PassThrough } from 'node:stream';
 
-import { pkgUtils } from '@verdaccio/core';
 import type { searchUtils } from '@verdaccio/core';
 import type { IProxy, ProxyInstanceList, ProxySearchParams } from '@verdaccio/proxy';
 import { setupUpLinks } from '@verdaccio/proxy';
 import type { Config, Logger } from '@verdaccio/types';
 
 import { removeDuplicates } from './search-utils';
-import { searchPages } from './search-pages';
 
 const debug = buildDebug('verdaccio:search');
 
@@ -24,10 +22,6 @@ class Search {
     const uplinksList = Object.keys(this.uplinks);
 
     return uplinksList;
-  }
-
-  public searchPages(options: ProxySearchParams) {
-    return searchPages(this.uplinks, options);
   }
 
   /**
@@ -60,15 +54,13 @@ class Search {
 
       for await (const chunk of streamPassThrough) {
         if (Array.isArray(chunk)) {
-          (chunk as searchUtils.SearchPackageItem[])
+          (chunk as searchUtils.SearchItem[])
             .filter((pkgItem) => {
               debug(`streaming remote pkg name ${pkgItem?.package?.name}`);
-              const version = pkgItem?.package?.version;
-              const valid = pkgUtils.isValidVersion(version);
-              if (!valid) debug('ignoring invalid uplink search version %o', version);
-              return valid;
+              return true;
             })
             .forEach((pkgItem) => {
+              // @ts-ignore
               return results.push({
                 ...pkgItem,
                 verdaccioPkgCached: false,

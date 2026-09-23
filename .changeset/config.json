@@ -1,7 +1,6 @@
 {
-  "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
+  "$schema": "https://unpkg.com/@changesets/config@1.3.0/schema.json",
   "changelog": "@changesets/cli/changelog",
-  "format": "oxfmt",
   "commit": false,
   "fixed": [
     [
@@ -14,10 +13,6 @@
     ]
   ],
   "ignoredPackages": ["@verdaccio/local-publish"],
-  "privatePackages": {
-    "version": true,
-    "tag": false
-  },
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "patch"

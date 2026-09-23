@@ -9,7 +9,7 @@ import { customizedTheme } from './tokens';
 export type Theme = MuiTheme & CustomizedTheme;
 
 declare module '@mui/material/styles' {
-  interface Theme extends CustomTheme, CustomizedTheme {}
+  interface Theme extends CustomTheme {}
   interface ThemeOptions extends CustomTheme {}
   interface Palette {
     black: string;
@@ -35,6 +35,12 @@ declare module '@mui/material/styles' {
     love?: string;
     nobel01?: string;
   }
+}
+
+declare module '@mui/material/styles/createTheme' {
+  interface Theme extends CustomizedTheme {}
+
+  interface DeprecatedThemeOptions extends CustomizedTheme {}
 }
 
 export const getTheme = (mode: ThemeMode, primaryColor?: string): Theme => {

@@ -1,5 +1,5 @@
 import buildDebug from 'debug';
-import type { RequestHandler, Response, Router } from 'express';
+import type { Response, Router } from 'express';
 
 import type { Auth } from '@verdaccio/auth';
 import { getApiToken } from '@verdaccio/auth';
@@ -12,7 +12,6 @@ import {
   authUtils,
   cryptoUtils,
   errorUtils,
-  reqUtils,
   validationUtils,
 } from '@verdaccio/core';
 import { USER_API_ENDPOINTS, rateLimit } from '@verdaccio/middleware';
@@ -22,41 +21,7 @@ import type { $NextFunctionVer, $RequestExtend } from '../types/custom';
 
 const debug = buildDebug('verdaccio:api:user');
 
-export default function (
-  route: Router,
-  auth: Auth,
-  config: Config,
-  logger: Logger,
-  /** No-op unless the user logging in has two-factor enabled. */
-  requireOtp: RequestHandler = (_req, _res, next) => next()
-): void {
-  async function issueLoginToken(
-    req: $RequestExtend,
-    res: Response,
-    next: $NextFunctionVer,
-    name: string,
-    password: string,
-    user: RemoteUser | undefined
-  ): Promise<void> {
-    const restoredRemoteUser: RemoteUser = createRemoteUser(name, user?.groups || []);
-    const token = await getApiToken(auth, config, restoredRemoteUser, password);
-    debug('login: new token');
-    if (!token) {
-      return next(errorUtils.getUnauthorized());
-    }
-
-    res.status(HTTP_STATUS.CREATED);
-    res.set(HEADERS.CACHE_CONTROL, HEADERS.NO_CACHE);
-
-    const message = authUtils.getAuthenticatedMessage(name);
-    debug('login: created user message %o', message);
-
-    return next({
-      ok: message,
-      token,
-    });
-  }
-
+export default function (route: Router, auth: Auth, config: Config, logger: Logger): void {
   route.get(
     USER_API_ENDPOINTS.get_user,
     rateLimit(config?.userRateLimit),
@@ -73,15 +38,14 @@ export default function (
         return next({ ok: false });
       }
 
-      const orgCouchdbUser = reqUtils.paramToString(req.params.org_couchdb_user);
-      const userName = orgCouchdbUser?.split(':')[1] ?? '';
+      const username = req.params.org_couchdb_user.split(':')[1];
       const message = authUtils.getAuthenticatedMessage(req.remote_user.name);
       debug('user authenticated message %o', message);
       res.status(HTTP_STATUS.OK);
       next({
         // 'npm owner' requires user info
         // TODO: we don't have the email
-        name: userName,
+        name: username,
         email: '',
         ok: message,
       });
@@ -113,8 +77,7 @@ export default function (
       debug('login or adduser');
       const remoteName = req?.remote_user?.name;
 
-      const userName = reqUtils.paramToString(req.params.org_couchdb_user);
-      if (!validationUtils.validateUserName(userName, name)) {
+      if (!validationUtils.validateUserName(req.params.org_couchdb_user, name)) {
         return next(errorUtils.getBadRequest(API_ERROR.USERNAME_MISMATCH));
       }
 
@@ -134,14 +97,23 @@ export default function (
               );
             }
 
-            Promise.resolve(
-              requireOtp(req, res, (otpError?: any) => {
-                if (otpError) {
-                  return next(otpError);
-                }
-                issueLoginToken(req, res, next, name, password, user as RemoteUser).catch(next);
-              })
-            ).catch(next);
+            const restoredRemoteUser: RemoteUser = createRemoteUser(name, user?.groups || []);
+            const token = await getApiToken(auth, config, restoredRemoteUser, password);
+            debug('login: new token');
+            if (!token) {
+              return next(errorUtils.getUnauthorized());
+            }
+
+            res.status(HTTP_STATUS.CREATED);
+            res.set(HEADERS.CACHE_CONTROL, HEADERS.NO_CACHE);
+
+            const message = authUtils.getAuthenticatedMessage(req.remote_user.name);
+            debug('login: created user message %o', message);
+
+            return next({
+              ok: message,
+              token,
+            });
           }
         );
       } else {

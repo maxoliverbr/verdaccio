@@ -53,20 +53,13 @@ export function validateName(name: string): boolean {
  * @return {Boolean} whether the package is valid or not
  */
 export function validatePackage(name: string): boolean {
-  // Split on every separator (no limit) so trailing or interior slashes are not
-  // silently dropped, keeping a single canonical form per package name.
-  const nameList = name.split('/');
+  const nameList = name.split('/', 2);
   if (nameList.length === 1) {
     // normal package
     return validateName(nameList[0]);
-  } else if (nameList.length === 2) {
-    // scoped package
-    return (
-      nameList[0][0] === '@' && validateName(nameList[0].slice(1)) && validateName(nameList[1])
-    );
   }
-  // anything with 3+ segments is never a valid package name
-  return false;
+  // scoped package
+  return nameList[0][0] === '@' && validateName(nameList[0].slice(1)) && validateName(nameList[1]);
 }
 
 /**

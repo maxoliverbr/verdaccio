@@ -1,6 +1,5 @@
 import MockDate from 'mockdate';
 import React from 'react';
-import { beforeAll, beforeEach, describe, expect, test } from 'vitest';
 
 import { cleanup, renderWith, screen } from '../../test/test-react-testing-library';
 import UpLinks from './UpLinks';

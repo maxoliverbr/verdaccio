@@ -1,16 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import type { FlagsConfig } from '@verdaccio/types';
-
 import { ConfigBuilder } from '../src';
-
-const allFlags = {
-  changePassword: true,
-  createUser: true,
-  stage: true,
-  tfa: true,
-  webLogin: true,
-} satisfies Required<FlagsConfig>;
 
 describe('Config builder', () => {
   test('should create a configuration file as object', () => {
@@ -163,17 +153,6 @@ describe('Config builder', () => {
     expect(config.getConfig().listen).toEqual({ 0: 'localhost:4873' });
   });
 
-  test('should add legacy auth cache server configuration', () => {
-    const config = ConfigBuilder.build().addLegacyAuthCache({
-      enabled: false,
-      maxEntries: 50,
-      ttlMs: 10000,
-    });
-    expect(config.getConfig().server).toEqual({
-      legacyAuthCache: { enabled: false, maxEntries: 50, ttlMs: 10000 },
-    });
-  });
-
   test('should add https configuration', () => {
     const config = ConfigBuilder.build().addHttps({
       key: '/path/to/key.pem',
@@ -194,8 +173,11 @@ describe('Config builder', () => {
   });
 
   test('should add flags configuration', () => {
-    const config = ConfigBuilder.build().addFlags(allFlags);
-    expect(config.getConfig().flags).toEqual(allFlags);
+    const config = ConfigBuilder.build().addFlags({ changePassword: true, createUser: true });
+    expect(config.getConfig().flags).toEqual({
+      changePassword: true,
+      createUser: true,
+    });
   });
 
   test('should merge flags configuration', () => {
@@ -206,11 +188,6 @@ describe('Config builder', () => {
       changePassword: true,
       createUser: true,
     });
-  });
-
-  test('should add deprecated experiments configuration', () => {
-    const config = ConfigBuilder.build().addExperiments(allFlags);
-    expect(config.getConfig().experiments).toEqual(allFlags);
   });
 
   test('should add notifications', () => {

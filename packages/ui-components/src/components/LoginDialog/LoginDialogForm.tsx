@@ -8,14 +8,13 @@ const LoginDialogForm: FC = () => {
   const {
     register,
     handleSubmit,
-    formState: { isValid, isSubmitting, errors },
+    formState: { isValid, errors },
     onSubmit,
   } = useLoginForm();
   return (
     <LoginForm
       errors={errors}
       handleSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
       isValid={isValid}
       onSubmit={onSubmit}
       register={register}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { describe, expect, test } from 'vitest';
 
 import { render, screen } from '../../test/test-react-testing-library';
 import Heading from './Heading';

@@ -1,6 +1,6 @@
 {
   "name": "@verdaccio/types",
-  "version": "14.0.0-next-9.15",
+  "version": "14.0.0-next-9.11",
   "description": "Verdaccio Type Definitions",
   "keywords": [
     "private",
@@ -40,7 +40,6 @@
     "build": "echo 0"
   },
   "dependencies": {
-    "@types/cors": "2.8.19",
     "@types/jsonwebtoken": "9.0.10"
   },
   "devDependencies": {

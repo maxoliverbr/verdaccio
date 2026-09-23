@@ -1,21 +1,14 @@
-import type { RequestHandler, Router } from 'express';
+import type { Router } from 'express';
 
 import type { Auth } from '@verdaccio/auth';
-import { HEADERS, constants, errorUtils, reqUtils } from '@verdaccio/core';
+import { HEADERS, constants, errorUtils } from '@verdaccio/core';
 import { DIST_TAGS_API_ENDPOINTS, allow, getRequestOptions, media } from '@verdaccio/middleware';
 import type { Storage } from '@verdaccio/store';
 import type { Logger } from '@verdaccio/types';
 
 import type { $NextFunctionVer, $RequestExtend, $ResponseExtend } from '../types/custom';
 
-export default function (
-  route: Router,
-  auth: Auth,
-  storage: Storage,
-  logger: Logger,
-  /** No-op unless the caller has two-factor enabled for this operation. */
-  requireOtp: RequestHandler = (_req, _res, next) => next()
-): void {
+export default function (route: Router, auth: Auth, storage: Storage, logger: Logger): void {
   const can = allow(auth, {
     beforeAll: (a, b) => logger.trace(a, b),
     afterAll: (a, b) => logger.trace(a, b),
@@ -28,12 +21,11 @@ export default function (
     if (typeof req.body !== 'string') {
       return next(errorUtils.getBadRequest('version is missing'));
     }
-    const packageName = reqUtils.paramToString(req.params.package);
-    const tag = reqUtils.paramToString(req.params.tag);
+
     const tags = {};
-    tags[tag] = req.body;
+    tags[req.params.tag] = req.body;
     try {
-      await storage.mergeTagsNext(packageName, tags);
+      await storage.mergeTagsNext(req.params.package, tags);
       res.status(constants.HTTP_STATUS.CREATED);
       return next({
         ok: constants.API_MESSAGE.TAG_ADDED,
@@ -47,7 +39,6 @@ export default function (
   route.put(
     DIST_TAGS_API_ENDPOINTS.tagging,
     can('publish'),
-    requireOtp,
     media(HEADERS.JSON),
     addTagPackageVersionMiddleware
   );
@@ -55,7 +46,6 @@ export default function (
   route.put(
     DIST_TAGS_API_ENDPOINTS.tagging_package,
     can('publish'),
-    requireOtp,
     media(HEADERS.JSON),
     addTagPackageVersionMiddleware
   );
@@ -63,18 +53,15 @@ export default function (
   route.delete(
     DIST_TAGS_API_ENDPOINTS.tagging_package,
     can('publish'),
-    requireOtp,
     async function (
       req: $RequestExtend,
       res: $ResponseExtend,
       next: $NextFunctionVer
     ): Promise<void> {
-      const packageName = reqUtils.paramToString(req.params.package);
-      const tag = reqUtils.paramToString(req.params.tag);
       const tags = {};
-      tags[tag] = null;
+      tags[req.params.tag] = null;
       try {
-        await storage.mergeTagsNext(packageName, tags);
+        await storage.mergeTagsNext(req.params.package, tags);
         res.status(constants.HTTP_STATUS.CREATED);
         return next({
           ok: constants.API_MESSAGE.TAG_REMOVED,
@@ -93,11 +80,11 @@ export default function (
       res: $ResponseExtend,
       next: $NextFunctionVer
     ): Promise<void> {
-      const packageName = reqUtils.paramToString(req.params.package);
+      const name = req.params.package;
       const requestOptions = getRequestOptions(req);
       try {
         const manifest = await storage.getPackageByOptions({
-          name: packageName,
+          name,
           uplinksLook: true,
           requestOptions,
         });

@@ -4,7 +4,7 @@ import type { SemVer } from 'semver';
 import semver from 'semver';
 
 import type { searchUtils } from '@verdaccio/core';
-import { DIST_TAGS, pkgUtils } from '@verdaccio/core';
+import { DIST_TAGS } from '@verdaccio/core';
 import type { Manifest, StringValue, Version, Versions } from '@verdaccio/types';
 
 const debug = buildDebug('verdaccio:storage:utils');
@@ -88,13 +88,15 @@ export function tagVersionNext(manifest: Manifest, version: string, tag: StringV
 }
 
 /**
- * Whether `newVersion` is strictly newer than `oldVersion` under loose semver.
- * Equal versions in any spelling (`1.2.3`, `v1.2.3`, `01.2.3`, `1.2.3+build`) are
- * not newer, so search merges keep the entry they saw first, which is the local one.
- * Both arguments must already pass `pkgUtils.isValidVersion`.
+ *  Check if the version is newer than the older version.
+ * @param newVersion
+ * @param oldVersion
+ * @returns
  */
-export function isNewerVersion(newVersion: string, oldVersion: string): boolean {
-  return semver.compareLoose(newVersion, oldVersion) === 1;
+export function isNewerVersion(newVersion, oldVersion) {
+  const comparisonResult = semver.compare(newVersion, oldVersion);
+
+  return comparisonResult === 1 || comparisonResult === 0;
 }
 
 /**
@@ -104,15 +106,9 @@ export function isNewerVersion(newVersion: string, oldVersion: string): boolean 
  */
 export function removeLowerVersions(objects: searchUtils.SearchPackageItem[]) {
   const versionMap = new Map();
-  const validObjects = objects.filter((item) => {
-    const version = item?.package?.version;
-    const valid = pkgUtils.isValidVersion(version);
-    if (!valid) debug('ignoring invalid search version %o', version);
-    return valid;
-  });
 
   // Iterate through the array and keep the highest version for each name
-  validObjects.forEach((item) => {
+  objects.forEach((item) => {
     const { name, version } = item.package;
     const key = name;
 
@@ -123,7 +119,7 @@ export function removeLowerVersions(objects: searchUtils.SearchPackageItem[]) {
   });
 
   // Filter objects based on the version map
-  return validObjects.reduce((acc, item) => {
+  return objects.reduce((acc, item) => {
     const { name, version } = item.package;
     if (
       versionMap.has(name) &&

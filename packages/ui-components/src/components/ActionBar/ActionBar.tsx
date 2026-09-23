@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import React, { useState } from 'react';
 
-import { url, utils } from '../../utils';
+import { url } from '../../utils';
 import RawViewer from '../RawViewer';
 import type { ActionBarActionProps } from './ActionBarAction';
 import ActionBarAction from './ActionBarAction';
@@ -28,10 +28,8 @@ const ActionBar: React.FC<Props> = ({ showRaw, showDownloadTarball = true, packa
     actions.push({ type: 'VISIT_HOMEPAGE', link: homepage });
   }
 
-  // bugs can be the object form or a plain url string, both valid in npm
-  const bugsUrl = utils.getBugsUrl(bugs);
-  if (bugsUrl && url.isURL(bugsUrl)) {
-    actions.push({ type: 'OPEN_AN_ISSUE', link: bugsUrl });
+  if (bugs?.url && url.isURL(bugs.url)) {
+    actions.push({ type: 'OPEN_AN_ISSUE', link: bugs.url });
   }
 
   if (dist?.tarball && url.isURL(dist.tarball) && showDownloadTarball) {

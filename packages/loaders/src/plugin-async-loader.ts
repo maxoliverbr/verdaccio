@@ -94,6 +94,7 @@ export async function asyncLoadPlugin<T extends pluginUtils.Plugin<T>>(
         let plugin = await tryLoadAsync<T>(externalFilePlugin, (a: any, b: any) => {
           logger.error(a, b);
         });
+        debug('external plugin %o', plugin);
         if (plugin && isValid(plugin)) {
           plugin = executePlugin(
             plugin,
@@ -125,28 +126,30 @@ export async function asyncLoadPlugin<T extends pluginUtils.Plugin<T>>(
     }
 
     // Try to load the plugin from the node_modules or global based on the `require` native algorithm
-    let plugin = await tryLoadAsync<T>(pluginName, (a: any, b: any) => {
-      logger.error(a, b);
-    });
-    if (plugin && isValid(plugin)) {
-      plugin = executePlugin(plugin, pluginConfigs[pluginId], pluginOptions, legacyMergeConfigs);
-      if (!sanityCheck(plugin)) {
-        logger.error({ pluginName }, "@{pluginName} doesn't look like a valid plugin");
+    if (typeof pluginId === 'string') {
+      let plugin = await tryLoadAsync<T>(pluginName, (a: any, b: any) => {
+        logger.error(a, b);
+      });
+      if (plugin && isValid(plugin)) {
+        plugin = executePlugin(plugin, pluginConfigs[pluginId], pluginOptions, legacyMergeConfigs);
+        if (!sanityCheck(plugin)) {
+          logger.error({ pluginName }, "@{pluginName} doesn't look like a valid plugin");
+          continue;
+        }
+        debug('>>> plugin is running and passed sanity check');
+        plugins.push(plugin);
+        logger.info(
+          { pluginName, pluginCategory },
+          'plugin @{pluginName} successfully loaded (@{pluginCategory})'
+        );
+        continue;
+      } else {
+        logger.error(
+          { pluginName },
+          'package not found, try to install @{pluginName} with a package manager'
+        );
         continue;
       }
-      debug('>>> plugin is running and passed sanity check');
-      plugins.push(plugin);
-      logger.info(
-        { pluginName, pluginCategory },
-        'plugin @{pluginName} successfully loaded (@{pluginCategory})'
-      );
-      continue;
-    } else {
-      logger.error(
-        { pluginName },
-        'package not found, try to install @{pluginName} with a package manager'
-      );
-      continue;
     }
   }
   debug('%o plugins found: %o', pluginCategory, plugins.length);

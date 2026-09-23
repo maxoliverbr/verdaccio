@@ -1,5 +1,4 @@
 import React from 'react';
-import { describe, expect, test } from 'vitest';
 
 import { act, render, screen, waitFor } from '../../test/test-react-testing-library';
 import Loading from './Loading';

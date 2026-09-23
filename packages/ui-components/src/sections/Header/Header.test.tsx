@@ -1,5 +1,5 @@
 import React from 'react';
-import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { vi } from 'vitest';
 
 import { HeaderInfoDialog } from '../../';
 import {
@@ -95,7 +95,7 @@ describe('<Header /> component with logged in state', () => {
   });
 
   test('should load the component in logged in state', async () => {
-    vi.spyOn(tokenUtils, 'tokenExpireInMs').mockReturnValue(60_000);
+    vi.spyOn(tokenUtils, 'isTokenExpire').mockReturnValue(false);
 
     renderHeader();
     await login('user', 'token');
@@ -118,25 +118,11 @@ describe('<Header /> component with logged in state', () => {
   });
 
   test('should login and logout the user', async () => {
-    vi.spyOn(tokenUtils, 'tokenExpireInMs').mockReturnValue(60_000); // avoid immediate logout due to invalid token
+    vi.spyOn(tokenUtils, 'isTokenExpire').mockReturnValue(false); // avoid immediate logout due to invalid token
     renderHeader();
     await login('user', 'token');
     expect(screen.getByTestId('logInDialogIcon')).toBeTruthy();
     await logout();
-  });
-
-  test('should show staged packages link when the stage flag is enabled', async () => {
-    window.__VERDACCIO_BASENAME_UI_OPTIONS = {
-      base: 'foo',
-      flags: { stage: true },
-    };
-    vi.spyOn(tokenUtils, 'tokenExpireInMs').mockReturnValue(60_000);
-
-    renderHeader();
-    await login('user', 'token');
-    fireEvent.click(screen.getByTestId('logInDialogIcon'));
-
-    expect(await screen.findByTestId('stagedPackagesMenuItem')).toBeInTheDocument();
   });
 
   test('should display info button', () => {
@@ -239,13 +225,5 @@ describe('<Header /> component with logged in state', () => {
 
   test.todo('autocompletion should display suggestions according to the type value');
 
-  test('should log out automatically when the token expires', async () => {
-    // first call arms the timer close to expiry; once it fires, the token reports expired
-    vi.spyOn(tokenUtils, 'tokenExpireInMs').mockReturnValueOnce(50).mockReturnValue(-1);
-    renderHeader();
-    await login('user', 'token');
-    await waitFor(() => {
-      expect(window.location.reload).toHaveBeenCalled();
-    });
-  });
+  test.todo('token expiration and auto logout');
 });

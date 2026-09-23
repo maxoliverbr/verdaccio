@@ -36,12 +36,8 @@ const TranslatorProvider: FunctionComponent<{
   }, [i18n, language]);
 
   useEffect(() => {
-    // apply the persisted language first, so onMount consumers (e.g. the dayjs
-    // locale loader) read the final i18n.language instead of the default
-    (async () => {
-      await changeLanguage();
-      onMount();
-    })();
+    changeLanguage();
+    onMount();
   }, [language, onMount, changeLanguage]);
 
   return (

@@ -5,7 +5,7 @@ import React from 'react';
 import { Trans } from 'react-i18next';
 
 import type { Theme } from '../../Theme';
-import { url, utils } from '../../utils';
+import { url } from '../../utils';
 import LinkExternal from '../LinkExternal';
 
 const StyledLink = styled(LinkExternal)<{ theme?: Theme }>(({ theme }) => ({
@@ -24,10 +24,9 @@ const StyledFundStrong = styled('strong')({
 });
 
 const FundButton: React.FC<{ packageMeta: any }> = ({ packageMeta }) => {
-  // funding can be a string, an object or an array of both
-  const fundingUrl = utils.getFundingUrl(packageMeta?.latest?.funding);
+  const fundingUrl = packageMeta?.latest?.funding?.url as string;
 
-  if (!fundingUrl || !url.isURL(fundingUrl)) {
+  if (!url.isURL(fundingUrl)) {
     return null;
   }
 

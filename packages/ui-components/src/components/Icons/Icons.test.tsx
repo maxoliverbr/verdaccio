@@ -1,5 +1,4 @@
 import React from 'react';
-import { describe, expect, test } from 'vitest';
 
 import { render } from '../../test/test-react-testing-library';
 import {

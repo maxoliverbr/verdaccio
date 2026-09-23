@@ -6,7 +6,6 @@ import type { FC } from 'react';
 import React from 'react';
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink } from 'react-router';
 
 import type { Theme } from '../../';
 import { getConfiguration } from '../../configuration';
@@ -34,17 +33,9 @@ interface Props {
   onSubmit: (data: LoginFormValues) => void;
   errors: FieldErrors<LoginFormValues>;
   isValid: boolean;
-  isSubmitting?: boolean;
 }
 
-const LoginForm: FC<Props> = ({
-  register,
-  handleSubmit,
-  onSubmit,
-  errors,
-  isValid,
-  isSubmitting = false,
-}) => {
+const LoginForm: FC<Props> = ({ register, handleSubmit, onSubmit, errors, isValid }) => {
   const { t } = useTranslation();
   const configuration = getConfiguration();
   const changePasswordEnabled = configuration?.flags?.changePassword;
@@ -59,9 +50,7 @@ const LoginForm: FC<Props> = ({
       <StyledButton
         color="primary"
         data-testid="login-dialog-form-login-button"
-        // disable while the request is in flight: a double click means a double
-        // POST, which can even trip the login rate limit
-        disabled={!isValid || isSubmitting}
+        disabled={!isValid}
         fullWidth={true}
         id="login--dialog-button-submit"
         size="large"
@@ -72,7 +61,7 @@ const LoginForm: FC<Props> = ({
       </StyledButton>
       {changePasswordEnabled && (
         <Typography align="center" sx={{ mt: 2, fontSize: 12 }} variant="body2">
-          <Link component={RouterLink} sx={{ ml: 1 }} to={Route.CHANGE_PASSWORD}>
+          <Link href={Route.CHANGE_PASSWORD} sx={{ ml: 1 }}>
             {t('security.changePassword.title')}
           </Link>
         </Typography>

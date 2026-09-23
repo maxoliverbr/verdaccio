@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 import * as FlagsIcon from 'country-flag-icons/react/3x2';
-import React, { StrictMode, Suspense } from 'react';
+import React, { StrictMode, Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { BrowserRouter, useLocation } from 'react-router';
@@ -69,8 +69,6 @@ function CustomInfoDialog({ onCloseDialog, title, isOpen }) {
         { label: t('dialog.license') },
         {
           label: '',
-          // icon-only tab: without an aria-label it has no accessible name
-          'aria-label': t('dialog.support'),
           icon: (
             <Flags>
               <FlagsIcon.UA />
@@ -92,6 +90,10 @@ const AppContent: React.FC = () => {
     Route.CHANGE_PASSWORD,
   ].includes(location.pathname as Route);
 
+  useEffect(() => {
+    loadDayJSLocale();
+  }, []);
+
   return (
     <StyledBox display="flex" flexDirection="column" height="100%">
       <SearchProvider>
@@ -105,17 +107,18 @@ const AppContent: React.FC = () => {
   );
 };
 
-// the server computes `basename` from the public url / url_prefix already normalized
-// for the router; the raw `url_prefix` config value may lack the leading slash or
-// ignore VERDACCIO_PUBLIC_URL, which makes every route (including /) fail to match
 // @ts-ignore
-const basename = window?.__VERDACCIO_BASENAME_UI_OPTIONS?.basename;
+const basename = window?.__VERDACCIO_BASENAME_UI_OPTIONS?.url_prefix;
 
 const App: React.FC = () => {
   return (
     <StrictMode>
       <ErrorBoundary>
-        <TranslatorProvider i18n={i18n} listLanguages={listLanguages} onMount={loadDayJSLocale}>
+        <TranslatorProvider
+          i18n={i18n}
+          listLanguages={listLanguages}
+          onMount={() => loadDayJSLocale}
+        >
           <Suspense fallback={<Loading />}>
             <BrowserRouter basename={basename}>
               <AppContent />

@@ -46,8 +46,9 @@ describe('filterBlockedVersions', () => {
     const manifest = createManifest(['1.0.0', '2.0.0']);
     // A rule with empty versions array — defensive guard
     const blockRules = new Map<string, any>([['test-pkg', { versions: [], strategy: 'block' }]]);
+    const allowRules = new Map();
 
-    const result = filterBlockedVersions(manifest, blockRules, undefined, logger);
+    const result = filterBlockedVersions(manifest, blockRules, allowRules, logger);
 
     expect(Object.keys(result.versions)).toEqual(['1.0.0', '2.0.0']);
   });

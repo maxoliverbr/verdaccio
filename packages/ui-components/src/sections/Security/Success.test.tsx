@@ -1,6 +1,4 @@
 import React from 'react';
-import { Route as RouterRoute, Routes } from 'react-router';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 import {
   act,
@@ -85,24 +83,13 @@ describe('<Success /> component', () => {
   });
 
   test('should redirect to home when submit button is clicked', async () => {
-    // navigation goes through the router (keeping the basename) instead of
-    // window.location, so assert on the rendered route
     await act(async () => {
-      renderWithRouter(
-        <Routes>
-          <RouterRoute element={<Success />} path={Route.SUCCESS} />
-          <RouterRoute element={<div data-testid="home" />} path={Route.ROOT} />
-        </Routes>,
-        '*',
-        [Route.SUCCESS]
-      );
+      renderWithRouter(<Success />, Route.SUCCESS, [Route.SUCCESS]);
     });
 
     const button = screen.getByText('security.success.submit');
-    await act(async () => {
-      fireEvent.click(button);
-    });
+    fireEvent.click(button);
 
-    expect(screen.getByTestId('home')).toBeInTheDocument();
+    expect(window.location.href).toBe('/');
   });
 });

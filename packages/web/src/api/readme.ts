@@ -2,19 +2,20 @@ import buildDebug from 'debug';
 import { Router } from 'express';
 
 import type { Auth } from '@verdaccio/auth';
-import { DIST_TAGS, HEADERS, HEADER_TYPE, HTTP_STATUS } from '@verdaccio/core';
+import { DIST_TAGS, HEADERS, HEADER_TYPE } from '@verdaccio/core';
+import { logger } from '@verdaccio/logger';
 import {
   $NextFunctionVer,
   $RequestExtend,
   $ResponseExtend,
   WebUrls,
+  allow,
   getRequestOptions,
 } from '@verdaccio/middleware';
 import type { Storage } from '@verdaccio/store';
-import type { Config, Manifest } from '@verdaccio/types';
+import type { Manifest } from '@verdaccio/types';
 
-import { isVersionValid, resolveVersion } from '../web-utils';
-import { scopedPackageAccess } from './scoped-access';
+import { addScope, isVersionValid } from '../web-utils';
 
 export { $RequestExtend, $ResponseExtend, $NextFunctionVer }; // Was required by other packages
 
@@ -52,20 +53,26 @@ const getReadmeFromManifest = (manifest: Manifest, v?: any): string | undefined 
   return readme;
 };
 
-function addReadmeWebApi(storage: Storage, auth: Auth, config: Config): Router {
+function addReadmeWebApi(storage: Storage, auth: Auth): Router {
   debug('initialized readme web api');
+  const can = allow(auth, {
+    beforeAll: (a, b) => logger.trace(a, b),
+    afterAll: (a, b) => logger.trace(a, b),
+  });
   const pkgRouter = Router(); /* eslint new-cap: 0 */
 
   pkgRouter.get(
     [WebUrls.readme_package_scoped_version, WebUrls.readme_package_version],
-    scopedPackageAccess(auth, config),
+    can('access'),
     async function (
       req: $RequestExtend,
       res: $ResponseExtend,
       next: $NextFunctionVer
     ): Promise<void> {
       debug('readme hit');
-      const name = (req as $RequestExtend & { scopedPackageName: string }).scopedPackageName;
+      const rawScope = req.params.scope; // May include '@'
+      const scope = rawScope ? rawScope.slice(1) : null; // Remove '@' if present
+      const name = scope ? addScope(scope, req.params.package) : req.params.package;
       debug('readme name %o', name);
       const requestOptions = getRequestOptions(req);
       try {
@@ -76,21 +83,10 @@ function addReadmeWebApi(storage: Storage, auth: Auth, config: Config): Router {
           requestOptions,
         })) as Manifest;
         debug('readme pkg %o', manifest?.name);
+        res.set(HEADER_TYPE.CONTENT_TYPE, HEADERS.TEXT_PLAIN_UTF8);
         // TODO: sanitize query
         const { v } = req.query;
-        // `v` may be a version or a dist-tag; anything else is a 404
-        let requestedVersion: string | undefined;
-        if (typeof v === 'string') {
-          requestedVersion = resolveVersion(manifest, v);
-          if (!requestedVersion) {
-            debug('version %o not found for %o', v, name);
-            res.status(HTTP_STATUS.NOT_FOUND);
-            res.end();
-            return;
-          }
-        }
-        res.set(HEADER_TYPE.CONTENT_TYPE, HEADERS.TEXT_PLAIN_UTF8);
-        const readme = getReadmeFromManifest(manifest, requestedVersion);
+        const readme = getReadmeFromManifest(manifest, v);
         next(getReadme(readme));
       } catch (err) {
         next(err);

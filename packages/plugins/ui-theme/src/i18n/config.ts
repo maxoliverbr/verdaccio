@@ -23,17 +23,15 @@ i18n
   // for all options read: https://www.i18next.com/overview/configuration-options
   .init({
     // in case window.VEDACCIO_LANGUAGE is undefined,it will fall back to 'en-US'
-    lng: (window as any)?.__VERDACCIO_BASENAME_UI_OPTIONS?.language || DEFAULT_LANGUAGE,
+    lng: window?.__VERDACCIO_BASENAME_UI_OPTIONS?.language || DEFAULT_LANGUAGE,
     fallbackLng: DEFAULT_LANGUAGE,
-    supportedLngs: [...listLanguagesAsString],
+    whitelist: [...listLanguagesAsString],
     load: 'currentOnly',
     react: {
       useSuspense: false,
     },
     resources: languages,
     debug: false,
-    // keep the vendor support notice out of the browser console and test output
-    showSupportNotice: false,
     interpolation: {
       escapeValue: false, // react already safes from xss
     },

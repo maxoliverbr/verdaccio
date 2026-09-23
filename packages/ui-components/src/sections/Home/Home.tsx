@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { GenericError, Loading, PackageList, useManifests } from '../..';
+import { Loading, PackageList, useManifests } from '../..';
 import type { ManifestWeb } from '../../providers/ManifestsProvider/ManifestsProvider';
 
 const Home: React.FC = () => {
   const manifests = useManifests();
 
   if (manifests.isError) {
-    return <GenericError />;
+    return <div>Error loading manifests</div>;
   }
 
   return (
@@ -17,6 +17,7 @@ const Home: React.FC = () => {
       ) : (
         <PackageList packages={manifests.manifests as ManifestWeb[]} />
       )}
+      {manifests.isError && <div>{'Error loading manifests'}</div>}
     </div>
   );
 };

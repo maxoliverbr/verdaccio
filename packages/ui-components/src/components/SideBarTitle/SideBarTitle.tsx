@@ -70,7 +70,7 @@ const DetailSidebarTitle: React.FC<Props> = ({
         </TitleWrapper>
       </StyledHeading>
       {description && <div>{description}</div>}
-      <StyledBoxVersion title={time ? formatDate(time) : undefined}>
+      <StyledBoxVersion title={formatDate(time)}>
         {isLatest
           ? t('sidebar.detail.latest-version', { version })
           : t('sidebar.detail.version', { version })}

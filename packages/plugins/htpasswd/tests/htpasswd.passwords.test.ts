@@ -18,17 +18,14 @@ const config = {
   max_users: 1000,
 } as HTPasswdConfig;
 
-vi.mock('../src/crypto-utils', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    randomBytes: (): { toString: () => string } => {
-      return {
-        toString: (): string => '$6',
-      };
-    },
-  };
-});
+vi.mock('../src/crypto-utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/crypto-utils')>()),
+  randomBytes: (): { toString: () => string } => {
+    return {
+      toString: (): string => '$6',
+    };
+  },
+}));
 
 describe('HTPasswd', () => {
   let wrapper;
@@ -77,9 +74,8 @@ describe('HTPasswd', () => {
   test('changePassword - it should change password', async () => {
     let dataToWrite: any;
     vi.doMock('fs', async (importOriginal) => {
-      const actual = await importOriginal();
       return {
-        ...(actual as object),
+        ...(await importOriginal<typeof import('fs')>()),
         writeFile: vi.fn((_name, data, callback) => {
           dataToWrite = data;
           callback();

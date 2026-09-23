@@ -1,7 +1,6 @@
 import buildDebug from 'debug';
 import { Range } from 'semver';
 
-import { prepareRules } from '../filtering/matcher';
 import type { ConfigRule, ParsedConfig, ParsedRule, PluginConfig } from './types';
 
 const debug = buildDebug('verdaccio:plugin:package-filter:config');
@@ -45,7 +44,6 @@ function parseConfigRules(configRules: ConfigRule[]): Map<string, ParsedRule> {
     throw new TypeError(`Could not parse rule ${JSON.stringify(rule, null, 4)}`);
   }
 
-  prepareRules(ruleMap);
   return ruleMap;
 }
 
@@ -69,12 +67,9 @@ export function parseConfig(config: PluginConfig): ParsedConfig {
     minAgeMs = minAgeDays * 24 * 60 * 60 * 1000;
   }
 
-  const excludeDeprecated = config.excludeDeprecated === true;
-
   return {
     dateThreshold,
     minAgeMs,
-    excludeDeprecated,
     blockRules: blockMap,
     allowRules: allowMap,
   };

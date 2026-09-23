@@ -1,5 +1,4 @@
 import React from 'react';
-import { afterEach, describe, expect, test } from 'vitest';
 
 import { cleanup, renderWithRouteDetail, screen } from '../../test/test-react-testing-library';
 import DetailContainer from './Detail';

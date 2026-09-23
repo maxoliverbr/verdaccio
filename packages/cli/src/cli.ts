@@ -17,7 +17,7 @@ import { MIN_NODE_VERSION, isVersionValid } from './utils';
  * version/name) via {@link CliRuntimeOptions} — e.g. a registry that needs to
  * boot with a custom Storage — without re-implementing the command set.
  */
-export function runCli(options: CliRuntimeOptions = {}): Promise<void> {
+export function runCli(options: CliRuntimeOptions = {}): Promise<number> {
   configureCli(options);
 
   if (process.getuid && process.getuid() === 0) {
@@ -34,7 +34,11 @@ export function runCli(options: CliRuntimeOptions = {}): Promise<void> {
   const [node, app, ...args] = process.argv;
 
   const version =
-    options.version ?? (pkgUtils.getPackageJson(import.meta.dirname, '..').version as string);
+    options.version ??
+    (pkgUtils.getPackageJson(
+      typeof __dirname !== 'undefined' ? __dirname : import.meta.dirname,
+      '..'
+    ).version as string);
 
   const cli = new Cli({
     binaryLabel: `verdaccio`,

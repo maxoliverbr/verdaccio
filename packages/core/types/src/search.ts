@@ -5,15 +5,14 @@ export type PublisherMaintainer = {
 
 export type SearchPackageBody = {
   name: string;
-  scope?: string;
+  scope: string;
   description: string;
   author: string | PublisherMaintainer;
   version: string;
-  license?: string;
   keywords: string | string[] | undefined;
   date: string;
   links?: {
-    npm?: string;
+    npm: string; // only include placeholder for URL eg: {url}/{packageName}
     homepage?: string;
     repository?: string;
     bugs?: string;

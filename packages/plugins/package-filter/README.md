@@ -69,20 +69,18 @@ When both `minAgeDays` and `dateThreshold` are set, the **earlier** cutoff wins 
 
 ### Block by Scope
 
-Block all packages under a scope. Scope values can be exact names or glob patterns.
-Scope globs are matched against only the extracted scope name, for example `@babel`, so use patterns like `@babel*` or `@my-org-*` instead of `@babel/*`.
+Block all packages under a scope.
 
 ```yaml
 filters:
   '@verdaccio/package-filter':
     block:
       - scope: '@evilscope'
-      - scope: '@my-org-*'
 ```
 
 ### Block by Package Name
 
-Block all versions of a specific package. Package values can be exact names or glob patterns.
+Block all versions of a specific package.
 
 ```yaml
 filters:
@@ -90,13 +88,11 @@ filters:
     block:
       - package: 'malicious-pkg'
       - package: '@coolauthor/stolen'
-      - package: 'react-*'
-      - package: '@legacy/*'
 ```
 
 ### Block by Version Range
 
-Block specific semver ranges of a package. Package values can be exact names or glob patterns. Version ranges use [semver](https://www.npmjs.com/package/semver) syntax.
+Block specific semver ranges of a package. Uses [semver](https://www.npmjs.com/package/semver) syntax.
 
 ```yaml
 filters:
@@ -104,8 +100,6 @@ filters:
     block:
       - package: '@coolauthor/stolen'
         versions: '>2.0.1'
-      - package: '@legacy/*'
-        versions: '>=3.0.0'
 ```
 
 Multiple version ranges for the same package are merged:
@@ -167,11 +161,11 @@ filters:
 
 Allow rules are checked before block rules. The granularity levels:
 
-| Allow rule                           | Effect                                     |
-| ------------------------------------ | ------------------------------------------ |
-| `scope: '@x'` or `scope: '@x-*'`     | Entire matching scope bypasses all rules   |
-| `package: 'x'` or `package: 'x-*'`   | Entire matching package bypasses all rules |
-| `package: 'x'` + `versions: '1.0.0'` | Only matching versions are exempted        |
+| Allow rule                           | Effect                              |
+| ------------------------------------ | ----------------------------------- |
+| `scope: '@x'`                        | Entire scope bypasses all rules     |
+| `package: 'x'`                       | Entire package bypasses all rules   |
+| `package: 'x'` + `versions: '1.0.0'` | Only matching versions are exempted |
 
 ### Full Example
 

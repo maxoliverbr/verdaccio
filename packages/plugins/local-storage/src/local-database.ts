@@ -194,49 +194,37 @@ class LocalDatabase extends pluginUtils.Plugin<{}> implements Storage {
   }
 
   public getPackageStorage(packageName: string): pluginUtils.StorageHandler {
-    // Storage root
-    const storageRoot = path.resolve(this.getStoragePath());
-    debug('storage root %o', storageRoot);
-
-    if (isNil(storageRoot)) {
-      this.logger.error('property storage in config.yaml is required for using this plugin');
-      throw new Error('property storage in config.yaml is required for using this plugin');
-    }
-
-    // Storage path based on package access configuration
     const packageAccess = authUtils.getMatchedPackagesSpec(packageName, this.config.packages);
 
-    let storagePath;
-    if (packageAccess && typeof packageAccess.storage === 'string') {
-      storagePath = fileUtils.resolveSafePath(storageRoot, packageAccess.storage);
-      debug('storage path %o', storagePath);
-
-      if (isNil(storagePath)) {
-        this.logger.error(
-          'access-specific storage path is not under the configured storage directory or is invalid'
-        );
-        throw errorUtils.getInternalError(
-          'access-specific storage path is not under the configured storage directory or is invalid'
-        );
-      }
-    } else {
-      storagePath = storageRoot;
+    const packagePath: string = this._getLocalStoragePath(
+      packageAccess ? packageAccess.storage : undefined
+    );
+    debug('storage path selected %o', packagePath);
+    if (typeof packagePath !== 'string') {
+      debug('the package %o has no storage defined ', packageName);
+      throw errorUtils.getInternalError('storage not found or implemented');
     }
 
-    // Storage path for the package
-    const packageStoragePath = fileUtils.resolveSafePath(storagePath, packageName);
-    debug('package path %o', packageStoragePath);
+    const packageStoragePath = path.resolve(path.join(packagePath, packageName));
 
-    if (isNil(packageStoragePath)) {
-      this.logger.error(
-        'package-specific storage path is not under the configured storage directory or is invalid'
-      );
+    // Verify that the file path is under the storage root directory
+    // to avoid "uncontrolled data used in path expression" issues
+    const storageRoot = path.resolve(this.getStoragePath());
+
+    debug('packageStoragePath %o, storageRoot %o', packageStoragePath, storageRoot);
+
+    if (
+      !packageStoragePath.startsWith(storageRoot + path.sep) &&
+      packageStoragePath !== storageRoot
+    ) {
       throw errorUtils.getInternalError(
-        'package-specific storage path is not under the configured storage directory or is invalid'
+        'package-specific path is not under the configured storage directory'
       );
     }
 
-    return new LocalDriver(packageStoragePath as string, this.logger);
+    debug('storage absolute path %o', packageStoragePath);
+
+    return new LocalDriver(packageStoragePath, this.logger);
   }
 
   public async clean(): Promise<void> {
@@ -287,6 +275,20 @@ class LocalDatabase extends pluginUtils.Plugin<{}> implements Storage {
     } catch (err: any) {
       this.logger.error({ err }, 'sync database file failed: @{err}');
       throw err;
+    }
+  }
+
+  private _getLocalStoragePath(storage: string | void): string {
+    const globalConfigStorage = this.getStoragePath();
+    if (isNil(globalConfigStorage)) {
+      this.logger.error('property storage in config.yaml is required for using this plugin');
+      throw new Error('property storage in config.yaml is required for using this plugin');
+    } else {
+      if (typeof storage === 'string') {
+        return path.join(globalConfigStorage as string, storage as string);
+      }
+
+      return globalConfigStorage as string;
     }
   }
 

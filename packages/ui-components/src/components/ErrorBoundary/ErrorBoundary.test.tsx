@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, test, vi } from 'vitest';
+import { vi } from 'vitest';
 
 import { renderWithRouteDetail, screen } from '../../test/test-react-testing-library';
 import ErrorBoundary from './ErrorBoundary';

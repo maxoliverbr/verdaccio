@@ -33,8 +33,7 @@ export function getMatchedPackagesSpec(
   packages: PackageList
 ): PackageAccess | void {
   for (const i in packages) {
-    // match case-insensitively, npm package names are case-insensitive
-    if ((minimatch.makeRe(i, { nocase: true }) as MMRegExp).exec(pkgName)) {
+    if ((minimatch.makeRe(i) as MMRegExp).exec(pkgName)) {
       return packages[i];
     }
   }

@@ -1,5 +1,5 @@
 import type { SyntheticEvent } from 'react';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { vi } from 'vitest';
 
 import { copyToClipBoardUtility, getCLISetConfigRegistry } from './cli-utils';
 

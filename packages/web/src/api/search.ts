@@ -3,8 +3,8 @@ import { Router } from 'express';
 import { URLSearchParams } from 'node:url';
 
 import type { Auth } from '@verdaccio/auth';
-import { errorUtils, reqUtils } from '@verdaccio/core';
-import type { searchUtils } from '@verdaccio/core';
+import { errorUtils } from '@verdaccio/core';
+import type { SearchQuery } from '@verdaccio/core/src/search-utils';
 import { WebUrls } from '@verdaccio/middleware';
 import type { Storage } from '@verdaccio/store';
 import type { Manifest } from '@verdaccio/types';
@@ -20,6 +20,7 @@ function checkAccess(pkg: any, auth: any, remoteUser): Promise<Manifest | null> 
         if (err.status && String(err.status).match(/^4\d\d$/)) {
           // auth plugin returns 4xx user error,
           // that's equivalent of !allowed basically
+          allowed = false;
           return resolve(null);
         } else {
           reject(err);
@@ -47,12 +48,12 @@ function addSearchWebApi(storage: Storage, auth: Auth): Router {
       };
       req.socket.on('close', onClientClose);
       try {
-        const text = reqUtils.paramToString(req.params.anything);
+        const text: string = (req.params.anything as string) ?? '';
         // These values are declared as optimal by npm cli
         // FUTURE: could be overwritten by ui settings.
         const size = 20;
         const from = 0;
-        const query: searchUtils.SearchQuery = {
+        const query: SearchQuery = {
           from: 0,
           maintenance: 0.5,
           popularity: 0.98,

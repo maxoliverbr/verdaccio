@@ -21,15 +21,6 @@ export function handleResponseType(response: Response): Promise<[boolean, any, n
     if (contentType?.includes('application/pdf')) {
       return Promise.all([response.ok, response.blob(), response.status]);
     }
-    // binary payloads (e.g. staged tarballs, served without a .tgz url) must
-    // never be decoded as text: invalid utf-8 bytes become U+FFFD and the
-    // downloaded archive is corrupted
-    if (
-      contentType?.includes('application/octet-stream') ||
-      contentType?.includes('application/gzip')
-    ) {
-      return Promise.all([response.ok, response.blob(), response.status]);
-    }
     if (contentType?.includes('application/json')) {
       return Promise.all([response.ok, response.json(), response.status]);
     }
@@ -61,12 +52,10 @@ class API {
 
     if (token && headers.has(AuthHeader) === false) {
       headers.set(AuthHeader, `Bearer ${token}`);
+      options.headers = headers;
     }
 
     headers.set('x-client', 'verdaccio-ui');
-    // assign unconditionally: doing it only inside the token branch dropped
-    // the x-client header for anonymous requests
-    options.headers = headers;
 
     return new Promise((resolve, reject) => {
       fetch(url, {

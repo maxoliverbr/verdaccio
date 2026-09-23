@@ -7,9 +7,7 @@ on:
       - master
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 env:
   CI: true
@@ -21,11 +19,13 @@ jobs:
     timeout-minutes: 14
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' && github.repository == 'verdaccio/verdaccio'
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
-      # v2 renamed the output hasChangesets -> has-changesets
-      hasChangesets: ${{ steps.changesets.outputs['has-changesets'] }}
+      hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Install dependencies with a custom registry
         uses: ./.github/actions/install-app
       - name: crowdin download
@@ -37,28 +37,28 @@ jobs:
         run: pnpm build
       - name: create versions
         id: changesets
-        uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d
         with:
-          # v2 renamed every input (version -> version-script, commit ->
-          # commit-message, title -> pr-title) and dropped setupGitUser. It
-          # also no longer reads the GITHUB_TOKEN env var: the custom PAT
-          # (needed so the version PR triggers CI) must go through the
-          # github-token input.
-          github-token: ${{ secrets.CHANGESET_RELEASE_TOKEN }}
-          version-script: pnpm ci:version
-          commit-message: 'chore: update versions'
-          pr-title: 'chore: update versions'
+          version: pnpm ci:version
+          commit: 'chore: update versions'
+          title: 'chore: update versions'
+          setupGitUser: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_RELEASE_TOKEN }}
 
   # Publish to npm once the version PR is merged (no changesets left).
   # Gated by the `npm` environment, which requires manual approval.
   publish:
     needs: version
-    if: needs.version.outputs.hasChangesets == 'false'
-    timeout-minutes: 14
+    if: github.ref == 'refs/heads/master' && github.repository == 'verdaccio/verdaccio' && needs.version.result == 'success' && needs.version.outputs.hasChangesets == 'false'
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Install dependencies with a custom registry
         uses: ./.github/actions/install-app
       - name: crowdin download
@@ -69,11 +69,21 @@ jobs:
       - name: build
         run: pnpm build
       - name: publish
-        uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1
+        id: npm-publish
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d
         with:
-          github-token: ${{ secrets.CHANGESET_RELEASE_TOKEN }}
-          publish-script: pnpm ci:publish
-          # v2 defaults this to true; this repo cuts GitHub releases elsewhere
-          create-github-releases: false
+          publish: pnpm ci:publish
+          createGithubReleases: false
+          setupGitUser: true
         env:
+          GITHUB_TOKEN: ${{ secrets.CHANGESET_RELEASE_TOKEN }}
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+          # Changesets invokes pnpm publish for each changed workspace package.
+          # Keep provenance in the publish process so every package gets an
+          # npm-hosted provenance attestation from this protected OIDC job.
+          PNPM_CONFIG_PROVENANCE: 'true'
+          NPM_CONFIG_PROVENANCE: 'true'
+      - name: Verify provenance for published packages
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.npm-publish.outputs.publishedPackages }}
+        run: bash scripts/verify-npm-provenance.sh

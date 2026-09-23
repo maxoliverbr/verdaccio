@@ -11,11 +11,4 @@ const baseConfig = createLibConfig(import.meta.dirname, {
 export default defineConfig({
   ...baseConfig,
   plugins: [react(), svgInlinePlugin(), linkEntryCssPlugin(), ...baseConfig.plugins],
-  build: {
-    ...baseConfig.build,
-    rolldownOptions: {
-      ...baseConfig.build.rolldownOptions,
-      platform: 'browser',
-    },
-  },
 });

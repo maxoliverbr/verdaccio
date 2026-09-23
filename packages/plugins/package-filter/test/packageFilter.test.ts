@@ -7,13 +7,8 @@ import type { Manifest } from '@verdaccio/types';
 
 import PackageFilterPlugin from '../src/index';
 import {
-  allDeprecatedManifest,
   babelTestManifest,
-  deprecatedManifest,
-  emptyDeprecatedManifest,
   emptyManifest,
-  latestDeprecatedManifest,
-  scopedDeprecatedManifest,
   testaccioManifest,
   typesNodeManifest,
 } from './manifests';
@@ -165,36 +160,6 @@ describe('PackageFilterPlugin', () => {
       expect(getLatest(typesResult)).toBe('2.6.3');
     });
 
-    test('filters by scope glob pattern', async function () {
-      const config = {
-        block: [{ scope: '@ba*' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const babelResult = await plugin.filter_metadata(babelTestManifest);
-      expect(getVersionKeys(babelResult)).toEqual([]);
-      expect(babelResult.readme).toContain('blocked by rule');
-
-      const typesResult = await plugin.filter_metadata(typesNodeManifest);
-      expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0', '2.6.3']);
-      expect(getLatest(typesResult)).toBe('2.6.3');
-    });
-
-    test('filters by package glob pattern', async function () {
-      const config = {
-        block: [{ package: '@babel/*' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const babelResult = await plugin.filter_metadata(babelTestManifest);
-      expect(getVersionKeys(babelResult)).toEqual([]);
-      expect(babelResult.readme).toContain('blocked by rule');
-
-      const typesResult = await plugin.filter_metadata(typesNodeManifest);
-      expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0', '2.6.3']);
-      expect(getLatest(typesResult)).toBe('2.6.3');
-    });
-
     test('filters by versions', async function () {
       const config = {
         block: [{ package: '@babel/test', versions: '>1.0.0' }],
@@ -212,58 +177,6 @@ describe('PackageFilterPlugin', () => {
       const typesResult = await plugin.filter_metadata(typesNodeManifest);
       expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0', '2.6.3']);
       expect(getLatest(typesResult)).toBe('2.6.3');
-    });
-
-    test('filters by package glob pattern and versions', async function () {
-      const config = {
-        block: [{ package: '@babel/*', versions: '>1.0.0' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const babelResult = await plugin.filter_metadata(babelTestManifest);
-      expect(getVersionKeys(babelResult)).toEqual(['1.0.0']);
-      expect(getLatest(babelResult)).toBe('1.0.0');
-
-      const typesResult = await plugin.filter_metadata(typesNodeManifest);
-      expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0', '2.6.3']);
-      expect(getLatest(typesResult)).toBe('2.6.3');
-    });
-
-    test.each([true, false])(
-      'exact package rule takes precedence over a matching glob rule (exact first: %s)',
-      async (exactFirst) => {
-        const exactRule = { package: '@babel/test', versions: '<1.5.0' };
-        const globRule = { package: '@babel/*', versions: '>1.5.0' };
-        const config = {
-          block: exactFirst ? [exactRule, globRule] : [globRule, exactRule],
-        };
-        const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-        const babelResult = await plugin.filter_metadata(babelTestManifest);
-        expect(getVersionKeys(babelResult)).toEqual(['1.5.0', '3.0.0']);
-      }
-    );
-
-    test.each([
-      {
-        rules: [
-          { package: '@babel/*', versions: '<1.5.0' },
-          { package: '@babel/t*', versions: '>1.5.0' },
-        ],
-        versions: ['1.5.0', '3.0.0'],
-      },
-      {
-        rules: [
-          { package: '@babel/t*', versions: '>1.5.0' },
-          { package: '@babel/*', versions: '<1.5.0' },
-        ],
-        versions: ['1.0.0', '1.5.0'],
-      },
-    ])('first matching package glob rule determines the result', async ({ rules, versions }) => {
-      const plugin = new PackageFilterPlugin({ block: rules }, pluginOptions);
-
-      const babelResult = await plugin.filter_metadata(babelTestManifest);
-      expect(getVersionKeys(babelResult)).toEqual(versions);
     });
 
     test('filters by multiple versions', async function () {
@@ -375,23 +288,6 @@ describe('PackageFilterPlugin', () => {
         expect(getLatest(babelResult)).toBe('3.0.0');
 
         // Should not unblock @types. Version 2.6.3 should be blocked.
-        const typesResult = await plugin.filter_metadata(typesNodeManifest);
-        expect(getVersionKeys(typesResult)).not.toContain('2.6.3');
-        expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0']);
-        expect(getLatest(typesResult)).toBe('2.2.0');
-      });
-
-      test('allow by package glob pattern', async function () {
-        const config = {
-          minAgeDays: getDaysSince('2021'),
-          allow: [{ package: '@babel/*' }],
-        };
-        const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-        const babelResult = await plugin.filter_metadata(babelTestManifest);
-        expect(getVersionKeys(babelResult)).toEqual(['1.0.0', '1.5.0', '3.0.0']);
-        expect(getLatest(babelResult)).toBe('3.0.0');
-
         const typesResult = await plugin.filter_metadata(typesNodeManifest);
         expect(getVersionKeys(typesResult)).not.toContain('2.6.3');
         expect(getVersionKeys(typesResult)).toEqual(['1.0.0', '2.2.0']);
@@ -787,114 +683,6 @@ describe('PackageFilterPlugin', () => {
     });
   });
 
-  describe('deprecated version filtering', () => {
-    test('excludeDeprecated removes deprecated versions', async function () {
-      const config = { excludeDeprecated: true };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['2.0.0', '3.0.0']);
-      expect(getVersionKeys(result)).not.toContain('1.0.0');
-      expect(getLatest(result)).toBe('3.0.0');
-    });
-
-    test('excludeDeprecated removes all versions when all are deprecated', async function () {
-      const config = { excludeDeprecated: true };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(allDeprecatedManifest);
-      expect(getVersionKeys(result)).toEqual([]);
-    });
-
-    test('excludeDeprecated does not affect non-deprecated packages', async function () {
-      const config = { excludeDeprecated: true };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(babelTestManifest);
-      expect(getVersionKeys(result)).toEqual(['1.0.0', '1.5.0', '3.0.0']);
-      expect(getLatest(result)).toBe('3.0.0');
-    });
-
-    test('excludeDeprecated is ignored when set to false', async function () {
-      const config = { excludeDeprecated: false };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['1.0.0', '2.0.0', '3.0.0']);
-    });
-
-    test('excludeDeprecated respects allow rules by scope', async function () {
-      const config = {
-        excludeDeprecated: true,
-        allow: [{ scope: '@myscope' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const scopedResult = await plugin.filter_metadata(scopedDeprecatedManifest);
-      expect(getVersionKeys(scopedResult)).toEqual(['1.0.0', '2.0.0']);
-
-      const unscopedResult = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(unscopedResult)).toEqual(['2.0.0', '3.0.0']);
-    });
-
-    test('excludeDeprecated respects allow rules by package', async function () {
-      const config = {
-        excludeDeprecated: true,
-        allow: [{ package: 'deprecated-pkg' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const allowedResult = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(allowedResult)).toEqual(['1.0.0', '2.0.0', '3.0.0']);
-
-      const scopedResult = await plugin.filter_metadata(scopedDeprecatedManifest);
-      expect(getVersionKeys(scopedResult)).toEqual(['2.0.0']);
-    });
-
-    test('excludeDeprecated respects allow rules by version', async function () {
-      const config = {
-        excludeDeprecated: true,
-        allow: [{ package: 'deprecated-pkg', versions: '1.0.0' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['1.0.0', '2.0.0', '3.0.0']);
-    });
-
-    test('excludeDeprecated combined with block rules', async function () {
-      const config = {
-        excludeDeprecated: true,
-        block: [{ package: 'deprecated-pkg', versions: '3.0.0' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(deprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['2.0.0']);
-      expect(getVersionKeys(result)).not.toContain('1.0.0');
-      expect(getVersionKeys(result)).not.toContain('3.0.0');
-    });
-
-    test('excludeDeprecated keeps versions with an empty deprecated string', async function () {
-      const config = { excludeDeprecated: true };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(emptyDeprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['2.0.0']);
-      expect(getVersionKeys(result)).not.toContain('1.0.0');
-    });
-
-    test('excludeDeprecated reassigns latest when the deprecated version was tagged latest', async function () {
-      const config = { excludeDeprecated: true };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(latestDeprecatedManifest);
-      expect(getVersionKeys(result)).toEqual(['1.0.0', '2.0.0']);
-      expect(getVersionKeys(result)).not.toContain('3.0.0');
-      expect(getLatest(result)).toBe('2.0.0');
-    });
-  });
-
   describe('manifest cleanup', () => {
     test('latest tag is set to a latest stable version', async function () {
       const config = {
@@ -923,50 +711,6 @@ describe('PackageFilterPlugin', () => {
       expect(result._distfiles).toHaveProperty('testaccio-test-1.4.4-beta.tgz');
       expect(result._distfiles).toHaveProperty('testaccio-test-1.7.1-beta.tgz');
       expect(result._distfiles).toHaveProperty('testaccio-test-2.2.1-next.tgz');
-    });
-  });
-
-  // `npm search` invokes filter_metadata once per matched package, so the filter
-  // must do as little work as possible for packages it does not actually filter.
-  // See https://github.com/verdaccio/verdaccio/issues/5837
-  describe('search performance', () => {
-    test('returns the same manifest reference when no filters are configured', async function () {
-      const plugin = new PackageFilterPlugin({}, pluginOptions);
-
-      const result = await plugin.filter_metadata(babelTestManifest);
-      expect(result).toBe(babelTestManifest);
-    });
-
-    test('skips the cleanup passes for packages no rule applies to', async function () {
-      const config = {
-        block: [{ package: 'some-other-package', versions: '>1.0.0' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-      const manifestWithOrphans = {
-        ...babelTestManifest,
-        'dist-tags': { latest: '3.0.0', legacy: '9.9.9' },
-        _distfiles: {
-          'orphan.tgz': { url: 'https://registry.npmjs.org/orphan.tgz' },
-        },
-      } as unknown as Manifest;
-
-      const result = await plugin.filter_metadata(manifestWithOrphans);
-
-      expect(getVersionKeys(result)).toEqual(['1.0.0', '1.5.0', '3.0.0']);
-      expect(result['dist-tags']).toHaveProperty('legacy', '9.9.9');
-      expect(result._distfiles).toHaveProperty('orphan.tgz');
-    });
-
-    test('still runs the cleanup passes when a version is removed', async function () {
-      const config = {
-        block: [{ package: '@testaccio/test', versions: '1.7.0' }],
-      };
-      const plugin = new PackageFilterPlugin(config, pluginOptions);
-
-      const result = await plugin.filter_metadata(testaccioManifest);
-
-      expect(getVersionKeys(result)).not.toContain('1.7.0');
-      expect(result._distfiles).not.toHaveProperty('testaccio-test-1.7.0.tgz');
     });
   });
 

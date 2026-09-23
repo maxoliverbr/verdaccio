@@ -19,17 +19,14 @@ const config = {
   max_users: 1000,
 } as HTPasswdConfig;
 
-vi.mock('../src/crypto-utils', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    randomBytes: (): { toString: () => string } => {
-      return {
-        toString: (): string => 'token',
-      };
-    },
-  };
-});
+vi.mock('../src/crypto-utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../src/crypto-utils')>()),
+  randomBytes: (): { toString: () => string } => {
+    return {
+      toString: (): string => 'token',
+    };
+  },
+}));
 
 describe('HTPasswd', () => {
   let wrapper;
@@ -45,9 +42,8 @@ describe('HTPasswd', () => {
   describe('addUser()', () => {
     test('it should not pass sanity check', async () => {
       vi.doMock('../src/utils.ts', async (importOriginal) => {
-        const actual = await importOriginal();
         return {
-          ...(actual as object),
+          ...(await importOriginal<typeof import('../src/utils')>()),
           sanityCheck: vi.fn((): Error => Error(API_ERROR.UNAUTHORIZED_ACCESS)),
         };
       });
@@ -86,9 +82,8 @@ describe('HTPasswd', () => {
     describe('addUser() error handling', () => {
       test('sanityCheck should return an Error', async () => {
         vi.doMock('../src/utils.ts', async (importOriginal) => {
-          const actual = await importOriginal();
           return {
-            ...(actual as object),
+            ...(await importOriginal<typeof import('../src/utils')>()),
             sanityCheck: vi.fn((): Error => Error('some error')),
           };
         });
@@ -105,9 +100,8 @@ describe('HTPasswd', () => {
 
       test('lockAndRead should return an Error', async () => {
         vi.doMock('../src/utils.ts', async (importOriginal) => {
-          const actual = await importOriginal();
           return {
-            ...(actual as object),
+            ...(await importOriginal<typeof import('../src/utils')>()),
             lockAndRead: (_a, b): any => b(new Error('lock error')),
             HtpasswdHashAlgorithm: constants.HtpasswdHashAlgorithm,
           };
@@ -125,9 +119,8 @@ describe('HTPasswd', () => {
 
       test('addUserToHTPasswd should return an Error', async () => {
         vi.doMock('../src/utils.ts', async (importOriginal) => {
-          const actual = await importOriginal();
           return {
-            ...(actual as object),
+            ...(await importOriginal<typeof import('../src/utils')>()),
             addUserToHTPasswd: () => {
               throw new Error('addUserToHTPasswd error');
             },
@@ -147,9 +140,8 @@ describe('HTPasswd', () => {
 
       test.skip('writeFile should return an Error', async () => {
         vi.doMock('../src/utils.ts', async (importOriginal) => {
-          const actual = await importOriginal();
           return {
-            ...(actual as object),
+            ...(await importOriginal<typeof import('../src/utils')>()),
             sanityCheck: () => Promise.resolve(null),
             parseHTPasswd: (): void => {},
             lockAndRead: (_a, b): any => b(null, ''),
@@ -160,9 +152,8 @@ describe('HTPasswd', () => {
         const HTPasswd = (await import('../src/htpasswd')).default;
         await new Promise((done) => {
           vi.doMock('fs', async (importOriginal) => {
-            const actual = await importOriginal();
             return {
-              ...(actual as object),
+              ...(await importOriginal<typeof import('fs')>()),
               writeFile: vi.fn((_name, _data, callback) => {
                 callback(new Error('write error'));
               }),
@@ -194,9 +185,8 @@ describe('HTPasswd', () => {
 
     test('reload should fails on check file', async () => {
       vi.doMock('fs', async (importOriginal) => {
-        const actual = await importOriginal();
         return {
-          ...(actual as object),
+          ...(await importOriginal<typeof import('fs')>()),
           stat: vi.fn((path, callback) => {
             callback(new Error('stat error'), null);
           }),
@@ -219,9 +209,8 @@ describe('HTPasswd', () => {
 
     test('reload times match', async () => {
       vi.doMock('fs', async (importOriginal) => {
-        const actual = await importOriginal();
         return {
-          ...(actual as object),
+          ...(await importOriginal<typeof import('fs')>()),
           stat: vi.fn((_path, callback) => {
             callback(null, {
               mtime: null,
@@ -243,9 +232,8 @@ describe('HTPasswd', () => {
 
     test('reload should fails on read file', async () => {
       vi.doMock('fs', async (importOriginal) => {
-        const actual = await importOriginal();
         return {
-          ...(actual as object),
+          ...(await importOriginal<typeof import('fs')>()),
           readFile: vi.fn((_name, _format, callback) => {
             callback(new Error('read error'), null);
           }),
