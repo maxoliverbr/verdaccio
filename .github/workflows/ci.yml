@@ -61,7 +61,7 @@ jobs:
     needs: [lint-and-format]
     if: ${{ needs.lint-and-format.result == 'success' }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"os":"ubuntu-latest","node_version":24}]}' || '{"include":[{"os":"ubuntu-latest","node_version":24},{"os":"ubuntu-latest","node_version":26},{"os":"windows-latest","node_version":24},{"os":"windows-latest","node_version":26},{"os":"macos-latest","node_version":24},{"os":"macos-latest","node_version":26}]}') }}
     name: Build / ${{ matrix.os }} / Node ${{ matrix.node_version }}
     runs-on: ${{ matrix.os }}
@@ -96,7 +96,7 @@ jobs:
     needs: [build]
     if: ${{ needs.build.result == 'success' }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"os":"ubuntu-latest","node_version":24}]}' || '{"include":[{"os":"ubuntu-latest","node_version":24},{"os":"ubuntu-latest","node_version":26},{"os":"windows-latest","node_version":24},{"os":"windows-latest","node_version":26},{"os":"macos-latest","node_version":24},{"os":"macos-latest","node_version":26}]}') }}
     name: Test / ${{ matrix.os }} / Node ${{ matrix.node_version }}
     runs-on: ${{ matrix.os }}
@@ -176,7 +176,7 @@ jobs:
             sleep 1
           done
       - name: Run E2E CLI tests
-        run: pnpm verdaccio-e2e --registry http://localhost:4873 --pm ${{ matrix.pm }} -v
+        run: ./node_modules/.bin/verdaccio-e2e --registry http://localhost:4873 --pm ${{ matrix.pm }} -v
       - name: Show Verdaccio logs
         if: always()
         run: cat ~/.config/verdaccio/verdaccio.log 2>/dev/null || echo "No log file found"
